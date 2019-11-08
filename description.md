@@ -1,6 +1,6 @@
-# q-sys-plugin-cisco-vc
+# Cisco VC
 
-QSC Q-sys plugins for Cisco VC Endpoint Control.
+Plugins for Cisco VC Endpoint Control.
 
 ## System
 

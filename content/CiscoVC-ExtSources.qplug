@@ -1,0 +1,435 @@
+-- Plugin for Cisco VC Units by Solo Works London
+-- Built in Lua
+-- For source, contact https://soloworks.co.uk
+
+PluginInfo = {
+    Name = "Cisco~VC~ExtSources (0.0.0.0-master)", -- The tilde here indicates folder structure in the Shematic Elements pane
+    Version = "0.0.0.0-master",
+    Id = "qsysc.cisco.vc.extsources.0.0.0.0-master", -- show this is just a unique id. Show some commented out 'fun' unique ids
+    Description = "Control for Cisco VC Touch 10 Ext Sources",
+    ShowDebug = true,
+    Author = "Solo Works London"
+}
+
+-- Once you've drawn your plugin in Designer, you can determine what colors you use a lot. Save yourself some time by putting them in a table, and then simply calling them later.
+local Colors = {
+    White = {255, 255, 255},
+    Black = {0, 0, 0},
+    Red = {255, 0, 0},
+    Green = {0, 255, 0}
+}
+
+local MaxSources = 10
+-- We can let users determine some of the plugin properties by exposing them here
+-- While this function can be very useful, it is completely optional and not always needed.
+-- If no Properties are set here, only the position and fill properties of your plugin will show in the Properties pane
+function GetProperties()
+    -- Static Properties
+    props = {
+        {
+            Name = "IP Address",
+            Type = "string",
+            Value = "127.0.0.1"
+        },
+        {
+            Name = "Source Count",
+            Type = "integer",
+            Min = 2,
+            Max = MaxSources,
+            Value = 2
+        },
+        {
+            Name = "Content Input",
+            Type = "integer",
+            Min = 1,
+            Max = 5,
+            Value = 3
+        },
+        {
+            Name = "On Signal",
+            Type = "enum",
+            Choices = {"AlwaysOn", "Enable", "Show"},
+            Value = "Enable"
+        }
+    }
+    -- Semi Static Properties
+    for s = 1, MaxSources do
+        table.insert(
+            props,
+            {
+                Name = string.format("Source%02i Text", s),
+                Type = "string",
+                Value = string.format("Source-Name-%02i", s)
+            }
+        )
+        table.insert(
+            props,
+            {
+                Name = string.format("Source%02i Icon", s),
+                Type = "enum",
+                Choices = {"camera", "document_camera", "mediaplayer", "PC", "whiteboard", "other"},
+                Value = "other"
+            }
+        )
+    end
+    return props
+end
+
+-- The below function is optional (like GetProperties() is), but it can allow further customization of what users can and can't do with your plugin.
+-- In this example, when Model 1 is selected in the properties pane, the ability to modify some of the properties will be hidden, only allowing customization with Model 2
+-- Another application of this is if you have different input/output types for different models, and want those properties to be dynamic in the Properties pane
+function RectifyProperties(props)
+    -- Show and Hide properties as required
+    for s = 1, MaxSources do
+        props[string.format("Source%02i Text", s)].IsHidden = s > props["Source Count"].Value
+        props[string.format("Source%02i Icon", s)].IsHidden = s > props["Source Count"].Value
+    end
+
+    return props
+end
+
+-- The below function is where you will populate the controls for your plugin.
+-- If you've written some of the Runtime code already, simply use the control names you populated in Text Controller/Control Script, and use their Properties to inform the values here
+-- ControlType can be Button, Knob, Indicator or Text
+-- ButtonType ( ControlType == Button ) can be Momentary, Toggle or Trigger
+-- IndicatorType ( ControlType == Indicator ) can be Led, Meter, Text or Status
+-- ControlUnit ( ControlType == Knob ) can be Hz, Float, Integer, Pan, Percent, Position or Seconds
+function GetControls(props)
+    ctls = {
+        -- System Pins
+        {
+            Name = "Online",
+            ControlType = "Indicator",
+            IndicatorType = "Led",
+            PinStyle = "Output",
+            Count = 1,
+            UserPin = true
+        },
+        {
+            Name = "IPAddress",
+            ControlType = "Indicator",
+            IndicatorType = "Text",
+            PinStyle = "Both",
+            Count = 1,
+            UserPin = true
+        },
+        {
+            Name = "SourceSignal",
+            ControlType = "Button",
+            ButtonType = "Momentary",
+            PinStyle = "Input",
+            Count = MaxSources
+        },
+        {
+            Name = "SourceSelected",
+            ControlType = "Button",
+            IndicatorType = "Momentary",
+            PinStyle = "Output",
+            Count = MaxSources
+        }
+    }
+
+    return ctls
+end
+
+-- Variable holding Page Names for ease
+local pagenames = {"Display"}
+
+-- This function allows you to populate pages in your plugin.
+function GetPages(props)
+    pages = {}
+    table.insert(pages, {name = pagenames[1]})
+    return pages
+end
+
+-- This function allows you to layout pages in your plugin.
+function GetControlLayout(props)
+    local layout = {}
+    local graphics = {}
+
+    local x, y = 0, 0
+    -- System Info Section
+    layout["Online"] = {
+        PrettyName = "System~Online",
+        Style = "Indicator",
+        Color = {0, 255, 0},
+        OffColor = {200, 0, 0},
+        UnlinkOffColor = true,
+        Position = {x + 50, y + 0},
+        Size = {20, 20}
+    }
+    layout["IPAddress"] = {
+        PrettyName = "System~IP Address",
+        Style = "Text",
+        HTextAlign = "Left",
+        StrokeWidth = 0,
+        Position = {x + 75, y + 25},
+        Size = {100, 20}
+    }
+    table.insert(
+        graphics,
+        {
+            Type = "GroupBox", -- This is the overall groupbox that will give the plugin a more 'contained' look
+            Text = "System",
+            HTextAlign = "Left",
+            Fill = Colors.White,
+            CornerRadius = 8,
+            StrokeColor = Colors.Black,
+            StrokeWidth = 1,
+            Position = {x, y},
+            Size = {300, 55} -- The width of the main GroupBox is dependent on how many channels the user specified. More channels means a wider group box
+        }
+    )
+    table.insert(
+        graphics,
+        {
+            Type = "Text",
+            Text = "Online",
+            Font = "Roboto",
+            FontSize = 12,
+            FontStyle = "Bold",
+            HTextAlign = "Left",
+            Color = Colors.Black,
+            Position = {x + 75, y + 0},
+            Size = {75, 20}
+        }
+    )
+    table.insert(
+        graphics,
+        {
+            Type = "Text",
+            Text = "IP Address:",
+            Font = "Roboto",
+            FontSize = 12,
+            FontStyle = "Bold",
+            HTextAlign = "Right",
+            Color = Colors.Black,
+            Position = {x, y + 25},
+            Size = {70, 20}
+        }
+    )
+
+    y = 60
+    -- Source Controls Section
+    for s = 1, props["Source Count"].Value do
+        -- Source Signal
+        layout["SourceSignal " .. s] = {
+            PrettyName = string.format("Source%02i Signal", s),
+            Style = "LED",
+            Color = {0, 255, 0},
+            Position = {x + 5, y + (s * 25)},
+            Size = {20, 20}
+        }
+        -- Source Selected
+        layout["SourceSelected " .. s] = {
+            PrettyName = string.format("Source%02i Selected", s),
+            Legend = "Press",
+            ButtonStyle = "Momentary",
+            Color = {0, 255, 0},
+            OffColor = {0, 100, 0},
+            UnlinkOffColor = true,
+            Position = {x + 100, y + (25 * s)},
+            Size = {40, 20}
+        }
+    end
+
+    table.insert(
+        graphics,
+        {
+            Type = "GroupBox",
+            Text = "Sources",
+            HTextAlign = "Left",
+            Fill = Colors.White,
+            CornerRadius = 8,
+            StrokeColor = Colors.Black,
+            StrokeWidth = 1,
+            Position = {x, y},
+            Size = {300, 250}
+        }
+    )
+
+    return layout, graphics
+end
+
+if Controls then
+    -- Local Structure for holding State
+    Cisco = {
+        Host = "127.0.0.1"
+    }
+
+    -- Send Data
+    function fnSend(data)
+        Notifications.Publish(Cisco.Host .. "-" .. "Tx", data)
+        --print("->Tx::" .. data)
+    end
+
+    function initPanel()
+        -- Clean House
+        fnSend("xCommand UserInterface Presentation ExternalSource RemoveAll")
+        -- Add sources as defined
+        for s = 1, Properties["Source Count"].Value do
+            msg = "xCommand UserInterface Presentation ExternalSource Add"
+            msg = msg .. " ConnectorId: " .. Properties["Content Input"].Value
+            msg = msg .. string.format(' SourceIdentifier: "Source%02i"', s)
+            msg = msg .. ' Name: "' .. Properties[string.format("Source%02i Text", s)].Value .. '"'
+            msg = msg .. " Type: " .. Properties[string.format("Source%02i Icon", s)].Value
+            fnSend(msg)
+        end
+        -- Sync current signal states
+        for k, v in pairs(Controls) do
+            if k == "SourceSignal" then
+                for s = 1, Properties["Source Count"].Value do
+                    if v[s].Boolean == true or Properties["On Signal"].Value == "AlwaysOn" then
+                        setSourceState(s, "Ready")
+                    elseif Properties["On Signal"].Value == "Show" then
+                        setSourceState(s, "Hidden")
+                    else
+                        setSourceState(s, "NotReady")
+                    end
+                end
+            end
+        end
+        -- Stop the timer
+        timerInitPanel:Stop()
+    end
+
+    -- Timer for Init (So it can be cancelled if it drops offline)
+    timerInitPanel = Timer.New()
+    timerInitPanel.EventHandler = initPanel
+
+    -- Subscribe to the Online channel
+    function subHandlerOnline(name, data)
+        print(name .. "::" .. data)
+        -- Set Online Status
+        Controls.Online.Boolean = data == "Online"
+        if Controls.Online.Boolean == true then
+            timerInitPanel:Start(5)
+        else
+            timerInitPanel:Stop()
+        end
+    end
+
+    -- Helper Function to split down commands from the system
+    function fnGetChunk(line)
+        x, y = line:find(" ")
+        if x == nil then
+            return line, ""
+        else
+            return line:sub(1, x - 1), line:sub(x + 1)
+        end
+    end
+
+    -- Subscribe to the Rx channel
+    function subHandlerRx(name, data)
+        -- print("Rx::" .. data)
+        chunk, data = fnGetChunk(data)
+        if chunk == "*e" then
+            chunk, data = fnGetChunk(data)
+            if chunk == "UserInterface" then
+                chunk, data = fnGetChunk(data)
+                if chunk == "Presentation" then
+                    chunk, data = fnGetChunk(data)
+                    if chunk == "ExternalSource" then
+                        chunk, data = fnGetChunk(data)
+                        if chunk == "Selected" then
+                            chunk, data = fnGetChunk(data)
+                            if chunk == "SourceIdentifier:" then
+                                -- Get this Source
+                                s = tonumber(data:sub(-3, -2))
+                                -- Fire Trigger (Doesn't Work...)
+                                -- Controls["SourceSelected"][s]:Trigger()
+                                -- Workaround Trigger
+                                fnTriggerSourceSelect(s)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    -- Create and setup the Timer
+    timerSourceSelect = Timer.New()
+    timerSourceSelect.EventHandler = function(timer)
+        timer:Stop()
+        for s = 1, Properties["Source Count"].Value do
+            Controls["SourceSelected"][s].Value = false
+        end
+    end
+    -- Function to replicate Trigger as it doesn't work
+    function fnTriggerSourceSelect(s)
+        Controls["SourceSelected"][s].Value = true
+        timerSourceSelect:Start(0.1)
+    end
+
+    -- Setup Event Handlers
+    for k, v in pairs(Controls) do
+        -- Setup Event Handler (IP Address Pin)
+        if k == "IP Address" then
+            --print("Setting up Online Event!!")
+            -- Setup Event Handler (Online)
+            v.EventHandler = function(changedControl)
+                print("Online Event!!")
+                --fnConnect()
+            end
+        else
+            for s = 1, MaxSources do
+                if k == "SourceSignal" then
+                    -- Setup Event Handler (Source Signal Change)
+                    v[s].EventHandler = function(changedControl)
+                        -- print("Signal Change on Source " .. s)
+                        if Properties["On Signal"].Value ~= "AlwaysOn" then
+                            if changedControl.Boolean == true then
+                                setSourceState(s, "Ready")
+                            elseif Properties["On Signal"].Value == "Show" then
+                                setSourceState(s, "Hidden")
+                            else
+                                setSourceState(s, "NotReady")
+                            end
+                        end
+                    end
+                elseif k == "SourceSelected" then
+                    -- Setup Event Handler (Source Signal Change)
+                    v[s].EventHandler = function(changedControl)
+                        if changedControl.Boolean == true then
+                            selectSource(s)
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    function setSourceState(s, state)
+        msg =
+            string.format(
+            'xCommand UserInterface Presentation ExternalSource State Set SourceIdentifier: "Source%02i" State: ',
+            s
+        )
+        fnSend(msg .. state)
+    end
+
+    function selectSource(s)
+        msg =
+            string.format('xCommand UserInterface Presentation ExternalSource Select SourceIdentifier: "Source%02i"', s)
+        fnSend(msg)
+    end
+
+    -- Set IP address from Properties if present
+    if Properties then
+        if Properties["IP Address"].Value ~= "" then
+            Cisco.Host = Properties["IP Address"].Value
+            Controls.IPAddress.String = Cisco.Host
+        else
+            print("IP Address Property Not Set")
+        end
+    end
+
+    -- Subscribe to Connection Notifications
+    print("Subscribing to " .. Cisco.Host .. "-" .. "Connection")
+    Notifications.Subscribe(Cisco.Host .. "-" .. "Connection", subHandlerOnline)
+
+    -- Subscribe to Rx Notifications
+    print("Subscribing to " .. Cisco.Host .. "-" .. "Rx")
+    Notifications.Subscribe(Cisco.Host .. "-" .. "Rx", subHandlerRx)
+end
