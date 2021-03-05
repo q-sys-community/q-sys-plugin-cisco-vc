@@ -13,11 +13,17 @@ PluginInfo = {
 
 -- Once you've drawn your plugin in Designer, you can determine what colors you use a lot. Save yourself some time by putting them in a table, and then simply calling them later.
 local Colors = {
+    cisco_light_blue = {0, 188, 235},
+    cisco_dark_blue = {13, 39, 77},
     White = {255, 255, 255},
     Black = {0, 0, 0},
     Red = {255, 0, 0},
     Green = {0, 255, 0}
 }
+
+function GetColor(props)
+    return Colors.cisco_light_blue
+end
 
 local MaxSources = 10
 -- We can let users determine some of the plugin properties by exposing them here
@@ -147,55 +153,48 @@ function GetControlLayout(props)
     local layout = {}
     local graphics = {}
 
-    local x, y = 0, 0
+    local source_count = props["Source Count"].Value
+
+    local title_size = {224, 32}
+    local btn_size = {32, 24}
+    local status_groupbox_size = {title_size[1], 3 * btn_size[2]}
+    local activity_groupbox_position = {0, title_size[2] + status_groupbox_size[2] + (0.5 * btn_size[2])}
+    local activity_groupbox_size = {title_size[1], ((source_count + 1) * btn_size[2]) + (0.5 * btn_size[2])}
+
     -- System Info Section
-    layout["Online"] = {
-        PrettyName = "System~Online",
-        Style = "Indicator",
-        Color = {0, 255, 0},
-        OffColor = {200, 0, 0},
-        UnlinkOffColor = true,
-        Position = {x + 50, y + 0},
-        Size = {20, 20}
-    }
-    layout["IPAddress"] = {
-        PrettyName = "System~IP Address",
-        Style = "Text",
-        HTextAlign = "Left",
-        StrokeWidth = 0,
-        Position = {x + 75, y + 25},
-        Size = {100, 20}
-    }
-    table.insert(
-        graphics,
+    graphics = {
+        {
+            Type = "Header",
+            Text = "Cisco VC External Sources",
+            HTextAlign = "Center",
+            Color = Colors.cisco_dark_blue,
+            FontSize = 16,
+            Position = {0, 0},
+            Size = title_size
+        },
         {
             Type = "GroupBox", -- This is the overall groupbox that will give the plugin a more 'contained' look
-            Text = "System",
+            Text = "Status",
             HTextAlign = "Left",
             Fill = Colors.White,
             CornerRadius = 8,
-            StrokeColor = Colors.Black,
+            StrokeColor = Colors.cisco_dark_blue,
+            Color = Colors.cisco_dark_blue,
             StrokeWidth = 1,
-            Position = {x, y},
-            Size = {300, 55} -- The width of the main GroupBox is dependent on how many channels the user specified. More channels means a wider group box
-        }
-    )
-    table.insert(
-        graphics,
+            Position = {0, title_size[2]},
+            Size = status_groupbox_size
+        },
         {
             Type = "Text",
-            Text = "Online",
+            Text = "Online:",
             Font = "Roboto",
             FontSize = 12,
             FontStyle = "Bold",
-            HTextAlign = "Left",
-            Color = Colors.Black,
-            Position = {x + 75, y + 0},
-            Size = {75, 20}
-        }
-    )
-    table.insert(
-        graphics,
+            HTextAlign = "Right",
+            Color = Colors.cisco_dark_blue,
+            Position = {0, title_size[2] + (0.5 * btn_size[2])},
+            Size = {3 * btn_size[1], btn_size[2]}
+        },
         {
             Type = "Text",
             Text = "IP Address:",
@@ -203,22 +202,67 @@ function GetControlLayout(props)
             FontSize = 12,
             FontStyle = "Bold",
             HTextAlign = "Right",
-            Color = Colors.Black,
-            Position = {x, y + 25},
-            Size = {70, 20}
+            Color = Colors.cisco_dark_blue,
+            Position = {0, title_size[2] + (1.5 * btn_size[2])},
+            Size = {3 * btn_size[1], btn_size[2]}
+        },
+        {
+            Type = "GroupBox",
+            Text = "Sources",
+            HTextAlign = "Left",
+            Fill = Colors.White,
+            CornerRadius = 8,
+            StrokeColor = Colors.cisco_dark_blue,
+            Color = Colors.cisco_dark_blue,
+            StrokeWidth = 1,
+            Position = activity_groupbox_position,
+            Size = activity_groupbox_size
         }
-    )
+    }
 
-    y = 60
+    layout["Online"] = {
+        PrettyName = "System~Online",
+        Style = "Indicator",
+        Color = {0, 255, 0},
+        Position = {3 * btn_size[1], title_size[2] + (0.5 * btn_size[2])},
+        Size = {btn_size[2], btn_size[2]}
+    }
+    layout["IPAddress"] = {
+        PrettyName = "System~IP Address",
+        Style = "TextBox",
+        Position = {3 * btn_size[1], title_size[2] + (1.5 * btn_size[2])},
+        Size = {3 * btn_size[1], btn_size[2]}
+    }
+
     -- Source Controls Section
     for s = 1, props["Source Count"].Value do
+        table.insert(
+            graphics,
+            {
+                Type = "Text",
+                Text = "Source " .. s .. ":",
+                Font = "Roboto",
+                FontSize = 12,
+                FontStyle = "Bold",
+                HTextAlign = "Right",
+                Color = Colors.cisco_dark_blue,
+                Position = {
+                    activity_groupbox_position[1],
+                    activity_groupbox_position[2] + (s * btn_size[2])
+                },
+                Size = {3 * btn_size[1], btn_size[2]}
+            }
+        )
         -- Source Signal
         layout["SourceSignal " .. s] = {
             PrettyName = string.format("Source%02i Signal", s),
-            Style = "LED",
+            Style = "Led",
             Color = {0, 255, 0},
-            Position = {x + 5, y + (s * 25)},
-            Size = {20, 20}
+            Position = {
+                activity_groupbox_position[1] + (3 * btn_size[1]) + ((btn_size[1]-btn_size[2])/2),
+                activity_groupbox_position[2] + (s * btn_size[2])
+            },
+            Size = {btn_size[2], btn_size[2]}
         }
         -- Source Selected
         layout["SourceSelected " .. s] = {
@@ -228,25 +272,13 @@ function GetControlLayout(props)
             Color = {0, 255, 0},
             OffColor = {0, 100, 0},
             UnlinkOffColor = true,
-            Position = {x + 100, y + (25 * s)},
-            Size = {40, 20}
+            Position = {
+                activity_groupbox_position[1] + (4 * btn_size[1]),
+                activity_groupbox_position[2] + (s * btn_size[2])
+            },
+            Size = {2 * btn_size[1], btn_size[2]}
         }
     end
-
-    table.insert(
-        graphics,
-        {
-            Type = "GroupBox",
-            Text = "Sources",
-            HTextAlign = "Left",
-            Fill = Colors.White,
-            CornerRadius = 8,
-            StrokeColor = Colors.Black,
-            StrokeWidth = 1,
-            Position = {x, y},
-            Size = {300, 250}
-        }
-    )
 
     return layout, graphics
 end

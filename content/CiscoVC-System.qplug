@@ -13,11 +13,17 @@ PluginInfo = {
 
 -- Once you've drawn your plugin in Designer, you can determine what colors you use a lot. Save yourself some time by putting them in a table, and then simply calling them later.
 local Colors = {
+    cisco_light_blue = {0,188,235},
+    cisco_dark_blue = {13,39,77},
     White = {255, 255, 255},
     Black = {0, 0, 0},
     Red = {255, 0, 0},
     Green = {0, 255, 0}
 }
+
+function GetColor(props)
+    return Colors.cisco_light_blue
+end
 
 -- We can let users determine some of the plugin properties by exposing them here
 -- While this function can be very useful, it is completely optional and not always needed.
@@ -111,33 +117,33 @@ function GetControls(props)
             UserPin = true
         },
         {
-            Name = "Mute",
+            Name = "MicMute",
             ControlType = "Button",
-            ButtonType = "Momentary",
+            ButtonType = "Toggle",
             PinStyle = "Both",
             Count = 1,
             UserPin = true
         },
         {
             Name = "Awake",
-            ControlType = "Button",
-            ButtonType = "Momentary",
+            ControlType = "Indicator",
+            IndicatorType = "Led",
             PinStyle = "Output",
             Count = 1,
             UserPin = true
         },
         {
             Name = "ActiveCall",
-            ControlType = "Button",
-            ButtonType = "Momentary",
+            ControlType = "Indicator",
+            IndicatorType = "Led",
             PinStyle = "Output",
             Count = 1,
             UserPin = true
         },
         {
             Name = "ActiveContent",
-            ControlType = "Button",
-            ButtonType = "Momentary",
+            ControlType = "Indicator",
+            IndicatorType = "Led",
             PinStyle = "Output",
             Count = 1,
             UserPin = true
@@ -159,101 +165,36 @@ end
 -- This function allows you to layout pages in your plugin.
 function GetControlLayout(props)
     local layout = {}
-    -- System
-    layout["Online"] = {
-        PrettyName = "System~Online",
-        Style = "Indicator",
-        Color = {0, 255, 0},
-        Position = {100, 00},
-        Size = {20, 20}
-    }
-    layout["IPAddress"] = {
-        PrettyName = "System~IP Address",
-        Style = "TextBox",
-        Position = {100, 20},
-        Size = {100, 20}
-    }
-    layout["Model"] = {
-        PrettyName = "System~Model Name",
-        Style = "Text",
-        Position = {100, 40},
-        Size = {100, 20}
-    }
-    layout["SerialNumber"] = {
-        PrettyName = "System~Serial Number",
-        Style = "Text",
-        Position = {100, 60},
-        Size = {100, 20}
-    }
-    layout["SoftwareVersion"] = {
-        PrettyName = "System~Software Version",
-        Style = "Text",
-        Position = {100, 80},
-        Size = {100, 20}
-    }
-    layout["Temperature"] = {
-        PrettyName = "System~Temperature",
-        Style = "Meter",
-        Min = 0,
-        Max = 125,
-        Position = {100, 100},
-        Size = {100, 20}
-    }
-    -- State
-    layout["Gain"] = {
-        PrettyName = "Audio~Gain",
-        Style = "Fader",
-        Position = {170, 160},
-        Size = {30, 120}
-    }
-    layout["Mute"] = {
-        PrettyName = "Audio~Mute",
-        Style = "Button",
-        ButtonStyle = "Toggle",
-        Color = {223, 0, 36},
-        UnlinkOffColor = false,
-        Position = {170, 290},
-        Size = {30, 20}
-    }
-    layout["Awake"] = {
-        PrettyName = "System~Awake",
-        Style = "Button",
-        ButtonStyle = "Momentary",
-        Color = {223, 0, 36},
-        UnlinkOffColor = false,
-        Position = {45, 155},
-        Size = {30, 20}
-    }
-    layout["ActiveCall"] = {
-        PrettyName = "System~Active Call",
-        Style = "Button",
-        ButtonStyle = "Momentary",
-        Color = {223, 0, 36},
-        UnlinkOffColor = false,
-        Position = {45, 155},
-        Size = {30, 20}
-    }
-    layout["ActiveContent"] = {
-        PrettyName = "System~Content Active",
-        Style = "Button",
-        ButtonStyle = "Momentary",
-        Color = {223, 0, 36},
-        UnlinkOffColor = false,
-        Position = {45, 155},
-        Size = {30, 20}
-    }
+    
+    local title_size = {224, 32}
+    local btn_size = {32, 24}
+    local status_groupbox_size = {title_size[1], 6 * btn_size[2]}
+    local activity_groupbox_position = {0, title_size[2] + status_groupbox_size[2] + (0.5 * btn_size[2])}
+    local activity_groupbox_size = {title_size[1], 4 * btn_size[2]}
+    local audio_groupbox_position = {0, activity_groupbox_position[2] + activity_groupbox_size[2] + (0.5 * btn_size[2])}
+    local audio_groupbox_size = {title_size[1], 3 * btn_size[2]}
 
     graphics = {
         {
+            Type = "Header",
+            Text = "Cisco VC System",
+            HTextAlign = "Center",
+            Color = Colors.cisco_dark_blue,
+            FontSize = 16,
+            Position = {0, 0},
+            Size = title_size
+        },
+        {
             Type = "GroupBox", -- This is the overall groupbox that will give the plugin a more 'contained' look
-            Text = "Info",
+            Text = "Status",
             HTextAlign = "Left",
             Fill = Colors.White,
             CornerRadius = 8,
-            StrokeColor = Colors.Black,
+            StrokeColor = Colors.cisco_dark_blue,
+            Color = Colors.cisco_dark_blue,
             StrokeWidth = 1,
-            Position = {0, 0},
-            Size = {220, 140} -- The width of the main GroupBox is dependent on how many channels the user specified. More channels means a wider group box
+            Position = {0, title_size[2]},
+            Size = status_groupbox_size
         },
         {
             Type = "Text",
@@ -262,9 +203,9 @@ function GetControlLayout(props)
             FontSize = 12,
             FontStyle = "Bold",
             HTextAlign = "Right",
-            Color = Colors.Black,
-            Position = {0, 0},
-            Size = {100, 20}
+            Color = Colors.cisco_dark_blue,
+            Position = {0, title_size[2] + (0.5 * btn_size[2])},
+            Size = {3 * btn_size[1], btn_size[2]}
         },
         {
             Type = "Text",
@@ -273,9 +214,9 @@ function GetControlLayout(props)
             FontSize = 12,
             FontStyle = "Bold",
             HTextAlign = "Right",
-            Color = Colors.Black,
-            Position = {0, 20},
-            Size = {100, 20}
+            Color = Colors.cisco_dark_blue,
+            Position = {0, title_size[2] + (1.5 * btn_size[2])},
+            Size = {3 * btn_size[1], btn_size[2]}
         },
         {
             Type = "Text",
@@ -284,9 +225,9 @@ function GetControlLayout(props)
             FontSize = 12,
             FontStyle = "Bold",
             HTextAlign = "Right",
-            Color = Colors.Black,
-            Position = {0, 40},
-            Size = {100, 20}
+            Color = Colors.cisco_dark_blue,
+            Position = {0, title_size[2] + (2.5 * btn_size[2])},
+            Size = {3 * btn_size[1], btn_size[2]}
         },
         {
             Type = "Text",
@@ -295,9 +236,9 @@ function GetControlLayout(props)
             FontSize = 12,
             FontStyle = "Bold",
             HTextAlign = "Right",
-            Color = Colors.Black,
-            Position = {0, 60},
-            Size = {100, 20}
+            Color = Colors.cisco_dark_blue,
+            Position = {0, title_size[2] + (3.5 * btn_size[2])},
+            Size = {3 * btn_size[1], btn_size[2]}
         },
         {
             Type = "Text",
@@ -306,23 +247,160 @@ function GetControlLayout(props)
             FontSize = 12,
             FontStyle = "Bold",
             HTextAlign = "Right",
-            Color = Colors.Black,
-            Position = {0, 80},
-            Size = {100, 20}
+            Color = Colors.cisco_dark_blue,
+            Position = {0, title_size[2] + (4.5 * btn_size[2])},
+            Size = {3 * btn_size[1], btn_size[2]}
         },
         {
             Type = "GroupBox",
-            Text = "State",
+            Text = "Activity",
             HTextAlign = "Left",
             Fill = Colors.White,
             CornerRadius = 8,
-            StrokeColor = Colors.Black,
+            StrokeColor = Colors.cisco_dark_blue,
+            Color = Colors.cisco_dark_blue,
             StrokeWidth = 1,
-            Position = {0, 150},
-            Size = {220, 170}
-        }
+            Position = activity_groupbox_position,
+            Size = activity_groupbox_size
+        },
+        {
+            Type = "Text",
+            Text = "System Awake:",
+            Font = "Roboto",
+            FontSize = 12,
+            FontStyle = "Bold",
+            HTextAlign = "Right",
+            Color = Colors.cisco_dark_blue,
+            Position = {0, activity_groupbox_position[2] + (0.5 * btn_size[2])},
+            Size = {3 * btn_size[1], btn_size[2]}
+        },
+        {
+            Type = "Text",
+            Text = "Call Active:",
+            Font = "Roboto",
+            FontSize = 12,
+            FontStyle = "Bold",
+            HTextAlign = "Right",
+            Color = Colors.cisco_dark_blue,
+            Position = {0, activity_groupbox_position[2] + (1.5 * btn_size[2])},
+            Size = {3 * btn_size[1], btn_size[2]}
+        },
+        {
+            Type = "Text",
+            Text = "Content Active:",
+            Font = "Roboto",
+            FontSize = 12,
+            FontStyle = "Bold",
+            HTextAlign = "Right",
+            Color = Colors.cisco_dark_blue,
+            Position = {0, activity_groupbox_position[2] + (2.5 * btn_size[2])},
+            Size = {3 * btn_size[1], btn_size[2]}
+        },
+        {
+            Type = "GroupBox",
+            Text = "Audio",
+            HTextAlign = "Left",
+            Fill = Colors.White,
+            CornerRadius = 8,
+            StrokeColor = Colors.cisco_dark_blue,
+            Color = Colors.cisco_dark_blue,
+            StrokeWidth = 1,
+            Position = audio_groupbox_position,
+            Size = audio_groupbox_size
+        },
+        {
+            Type = "Text",
+            Text = "Gain:",
+            Font = "Roboto",
+            FontSize = 12,
+            FontStyle = "Bold",
+            HTextAlign = "Right",
+            Color = Colors.cisco_dark_blue,
+            Position = {0, audio_groupbox_position[2] + (0.5 * btn_size[2])},
+            Size = {3 * btn_size[1], btn_size[2]}
+        },
+        {
+            Type = "Text",
+            Text = "Mic Mute:",
+            Font = "Roboto",
+            FontSize = 12,
+            FontStyle = "Bold",
+            HTextAlign = "Right",
+            Color = Colors.cisco_dark_blue,
+            Position = {0, audio_groupbox_position[2] + (1.5 * btn_size[2])},
+            Size = {3 * btn_size[1], btn_size[2]}
+        },
     }
-
+    -- System
+    layout["Online"] = {
+        PrettyName = "System~Online",
+        Style = "Indicator",
+        Color = {0, 255, 0},
+        Position = {3 * btn_size[1], title_size[2] + (0.5 * btn_size[2])},
+        Size = {btn_size[2], btn_size[2]}
+    }
+    layout["IPAddress"] = {
+        PrettyName = "System~IP Address",
+        Style = "TextBox",
+        Position = {3 * btn_size[1], title_size[2] + (1.5 * btn_size[2])},
+        Size = {3 * btn_size[1], btn_size[2]}
+    }
+    layout["Model"] = {
+        PrettyName = "System~Model Name",
+        Style = "Text",
+        Position = {3 * btn_size[1], title_size[2] + (2.5 * btn_size[2])},
+        Size = {3 * btn_size[1], btn_size[2]}
+    }
+    layout["SerialNumber"] = {
+        PrettyName = "System~Serial Number",
+        Style = "Text",
+        Position = {3 * btn_size[1], title_size[2] + (3.5 * btn_size[2])},
+        Size = {3 * btn_size[1], btn_size[2]}
+    }
+    layout["SoftwareVersion"] = {
+        PrettyName = "System~Software Version",
+        Style = "Text",
+        Position = {3 * btn_size[1], title_size[2] + (4.5 * btn_size[2])},
+        Size = {3 * btn_size[1], btn_size[2]}
+    }
+    --Activity
+    layout["Awake"] = {
+        PrettyName = "Activity~Online",
+        Style = "Indicator",
+        Color = {0, 255, 0},
+        Position = {3 * btn_size[1], activity_groupbox_position[2] + (0.5 * btn_size[2])},
+        Size = {btn_size[2], btn_size[2]}
+    }
+    layout["ActiveCall"] = {
+        PrettyName = "Activity~Active Call",
+        Style = "Indicator",
+        Color = {0, 255, 0},
+        Position = {3 * btn_size[1], activity_groupbox_position[2] + (1.5 * btn_size[2])},
+        Size = {btn_size[2], btn_size[2]}
+    }
+    layout["ActiveContent"] = {
+        PrettyName = "Activity~Content Active",
+        Style = "Indicator",
+        Color = {0, 255, 0},
+        Position = {3 * btn_size[1], activity_groupbox_position[2] + (2.5 * btn_size[2])},
+        Size = {btn_size[2], btn_size[2]}
+    }
+    --Audio
+    layout["Gain"] = {
+        PrettyName = "Audio~Gain",
+        Style = "Fader",
+        Position = {3 * btn_size[1], audio_groupbox_position[2] + (0.5 * btn_size[2])},
+        Size = {3 * btn_size[1], btn_size[2]}
+    }
+    layout["MicMute"] = {
+        PrettyName = "Audio~Mic Mute",
+        Style = "Button",
+        Legend = "Mute",
+        Color = {223, 0, 36},
+        UnlinkOffColor = false,
+        Position = {3 * btn_size[1], audio_groupbox_position[2] + (1.5 * btn_size[2])},
+        Size = btn_size
+    }
     return layout, graphics
 end
 
@@ -424,14 +502,20 @@ if Controls then
     -- Setup Event Handlers
     for k, v in pairs(Controls) do
         -- Setup Event Handler (IP Address Pin)
-        if k == "Mute" then
+        if k == "MicMute" then
             v.EventHandler = function(changedControl)
-                print("Mute Event: " .. changedControl.Value)
+                print("MicMute Event: " .. changedControl.Value)
                 if changedControl.Boolean == true then
                     fnSend("xCommand Audio Microphones Mute") -- Mic Mute ON
                 else
                     fnSend("xCommand Audio Microphones UnMute") -- Mic Mute OFF
                 end
+            end
+        end
+        if k == "Gain" then
+            v.EventHandler = function(changedControl)
+                print("Set gain: " .. math.floor(v.Value))
+                fnSend("xCommand Audio Volume Set Level: " .. math.floor(v.Value))
             end
         end
     end
