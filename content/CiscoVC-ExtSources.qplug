@@ -40,7 +40,7 @@ function GetProperties()
         {
             Name = "Source Count",
             Type = "integer",
-            Min = 2,
+            Min = 1,
             Max = MaxSources,
             Value = 2
         },
@@ -385,7 +385,7 @@ if Controls then
     timerSourceSelect.EventHandler = function(timer)
         timer:Stop()
         for s = 1, Properties["Source Count"].Value do
-            Controls["SourceSelected"][s].Value = false
+            Controls["SourceSelected" .. tostring(Properties["Source Count"].Value==1 and "" or " "..s)].Value = false
         end
     end
     -- Function to replicate Trigger as it doesn't work

@@ -365,7 +365,7 @@ function GetControlLayout(props)
     }
     --Activity
     layout["Awake"] = {
-        PrettyName = "Activity~Online",
+        PrettyName = "Activity~Awake",
         Style = "Indicator",
         Color = {0, 255, 0},
         Position = {3 * btn_size[1], activity_groupbox_position[2] + (0.5 * btn_size[2])},
