@@ -19,4 +19,3 @@ Handles Touch10 Extra sources. Properties allow setting of source details and be
 
 - Source Setup
 - Source Select Trigger
-- 
