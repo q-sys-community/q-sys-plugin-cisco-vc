@@ -385,7 +385,7 @@ if Controls then
     timerSourceSelect.EventHandler = function(timer)
         timer:Stop()
         for s = 1, Properties["Source Count"].Value do
-            Controls["SourceSelected" .. tostring(Properties["Source Count"].Value==1 and "" or " "..s)].Value = false
+            Controls["SourceSelected"][s].Value = false
         end
     end
     -- Function to replicate Trigger as it doesn't work
