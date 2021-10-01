@@ -623,6 +623,18 @@ if Controls then
                         if chunk == "State:" then
                             Controls.Awake.Boolean = line ~= "Standby"
                         end
+                    elseif chunk == "Audio" then
+                        chunk, line = fnGetChunk(line)
+                        if chunk == "Microphones" then
+                            chunk, line = fnGetChunk(line)
+                            if chunk == "Mute:" then
+                                if line == "On" then
+                                    Controls.MicMute.Boolean = true
+                                elseif line == "Off" then
+                                    Controls.MicMute.Boolean = false
+                                end
+                            end
+                        end
                     elseif chunk == "Conference" then
                     end
                 elseif chunk == "*e" then
