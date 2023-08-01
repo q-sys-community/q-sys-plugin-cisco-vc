@@ -5,7 +5,7 @@
 PluginInfo = {
     Name = "Cisco~VC (0.0.0.0-master)", -- The tilde here indicates folder structure in the Shematic Elements pane
     Version = "0.0.0.0-master",
-    Id = "qsysc.cisco.vc.system.0.0.0.0-master", -- show this is just a unique id. Show some commented out 'fun' unique ids
+    Id = "qsysc.cisco.vc.0.0.0.0-master", -- show this is just a unique id. Show some commented out 'fun' unique ids
     Description = "Control for Cisco VC Core System Functions (All models)",
     ShowDebug = true,
     Author = "Solo Works London"
