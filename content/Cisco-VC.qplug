@@ -182,9 +182,9 @@ function GetControls(props)
         },
         {
             Name = "Awake",
-            ControlType = "Indicator",
-            IndicatorType = "Led",
-            PinStyle = "Output",
+            ControlType = "Button",
+            ButtonType = "Toggle",
+            PinStyle = "Both",
             Count = 1,
             UserPin = true
         },
@@ -199,12 +199,12 @@ function GetControls(props)
     {
       Name = "PresentationStart",
       ControlType = "Button",
-      ButtonType = "StateTrigger",
-      Min = 0,
-      Max = 1,
+      ButtonType = "Toggle",
+      --Min = 0,
+      --Max = 1,
       PinStyle = "Both",
       UserPin = true
-    }
+    },
   
     }
     if props["External Sources"].Value then
@@ -212,8 +212,8 @@ function GetControls(props)
             controls,
             {
                 Name = "SourceSignal",
-                ControlType = "Button",
-                ButtonType = "Momentary",
+                ControlType = "Indicator",
+                IndicatorType = "Led",
                 PinStyle = "Input",
                 Count = MaxSources
             }
@@ -221,10 +221,10 @@ function GetControls(props)
         table.insert(
             controls,
             {
-                Name = "SourceSelected",
+                Name = "SourceSelect",
                 ControlType = "Button",
-                IndicatorType = "Momentary",
-                PinStyle = "Output",
+                ButtonType = "Momentary",
+                PinStyle = "Both",
                 Count = MaxSources
             }
         )
@@ -460,7 +460,7 @@ function GetControlLayout(props)
             Style = "Indicator",
             Color = {0, 255, 0},
             Position = {3 * btn_size[1], activity_groupbox_position[2] + (0.5 * btn_size[2])},
-            Size = {btn_size[2], btn_size[2]}
+            Size = btn_size
         }
         layout["ActiveCall"] = {
             PrettyName = "Activity~Active Call",
@@ -550,10 +550,10 @@ function GetControlLayout(props)
                 },
                 Size = {btn_size[2], btn_size[2]}
             }
-            layout["SourceSelected " .. s] = {
-                PrettyName = string.format("Source%02i Selected", s),
+            layout["SourceSelect " .. s] = {
+                PrettyName = string.format("Source%02i Select", s),
                 Legend = "Press",
-                ButtonStyle = "Momentary",
+                ButtonStyle = "MomenStatary",
                 Color = {0, 255, 0},
                 OffColor = {0, 100, 0},
                 UnlinkOffColor = true,
@@ -687,7 +687,7 @@ if Controls then
                                 -- Get this Source
                                 s = tonumber(data:sub(-3, -2))
                                 -- Fire Trigger (Doesn't Work...)
-                                -- Controls["SourceSelected"][s]:Trigger()
+                                -- Controls["SourceSelect"][s]:Trigger()
                                 -- Workaround Trigger
                                 fnTriggerSourceSelect(s)
                             end
@@ -703,12 +703,12 @@ if Controls then
     timerSourceSelect.EventHandler = function(timer)
         timer:Stop()
         for s = 1, Properties["Source Count"].Value do
-            Controls["SourceSelected"][s].Value = false
+            Controls["SourceSelect"][s].Value = false
         end
     end
     -- Function to replicate Trigger as it doesn't work
     function fnTriggerSourceSelect(s)
-        Controls["SourceSelected"][s].Value = true
+        Controls["SourceSelect"][s].Value = true
         timerSourceSelect:Start(0.1)
     end
 
@@ -944,10 +944,8 @@ if Controls then
             end
         elseif k == "PresentationStart" then
             v.EventHandler = function(changedControl)
-                if not changedControl.Boolean then
-                    --[[local cmd =
-                        "xCommand Presentation Start ConnectorId: 4 Instance: 1 Layout: Equal SendingMode: LocalRemote" --LocalRemote/LocalOnly
-                    ]]local cmd =
+                if changedControl.Boolean then
+                    local cmd =
                         "xCommand Presentation Start ConnectorId: " ..
                         Properties["Content Input"].Value .. " Instance: 1 Layout: Equal SendingMode: LocalRemote" --LocalRemote/LocalOnly]]
                     print(cmd)
@@ -958,6 +956,15 @@ if Controls then
                     fnSend(cmd)
                 end
             end
+        elseif k== "Awake" then
+            v.EventHandler = function(changedControl) 
+            if changedControl.Boolean then
+                local cmd = "xCommand Standby Deactivate"
+            else
+                local cmd = "xCommand Standby Activate"
+            end
+            print(cmd)
+            fnSend(cmd)
         else
             for s = 1, MaxSources do
                 if k == "SourceSignal" then
@@ -974,7 +981,7 @@ if Controls then
                             end
                         end
                     end
-                elseif k == "SourceSelected" then
+                elseif k == "SourceSelect" then
                     -- Setup Event Handler (Source Signal Change)
                     v[s].EventHandler = function(changedControl)
                         if changedControl.Boolean == true then
@@ -989,6 +996,7 @@ if Controls then
     -- Subscribe to Tx Notifications
     print("Subscribing to " .. Cisco.Host .. "-" .. "Tx")
     Notifications.Subscribe(Cisco.Host .. "-" .. "Tx", subRx)
+    Notifications.Subscribe(Cisco.Host .. "-" .. "Rx", subHandlerRx)
 
     fnConnect()
 end
