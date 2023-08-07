@@ -223,7 +223,7 @@ function GetControls(props)
             {
                 Name = "SourceSelect",
                 ControlType = "Button",
-                ButtonType = "Momentary",
+                ButtonType = "Trigger",
                 PinStyle = "Both",
                 Count = MaxSources
             }
@@ -367,7 +367,7 @@ function GetControlLayout(props)
             },
             {
                 Type = "Text",
-                Text = "Call Active:",
+                Text = "Present Content:",
                 Font = "Roboto",
                 FontSize = 12,
                 FontStyle = "Bold",
@@ -378,7 +378,7 @@ function GetControlLayout(props)
             },
             {
                 Type = "Text",
-                Text = "Present Content:",
+                Text = "Call Active:",
                 Font = "Roboto",
                 FontSize = 12,
                 FontStyle = "Bold",
@@ -457,26 +457,28 @@ function GetControlLayout(props)
         --Activity
         layout["Awake"] = {
             PrettyName = "Activity~Awake",
-            Style = "Indicator",
+            Legend = "Wake",
             Color = {0, 255, 0},
+            OffColor = {0, 100, 0},
+            UnlinkOffColor = true,
             Position = {3 * btn_size[1], activity_groupbox_position[2] + (0.5 * btn_size[2])},
-            Size = btn_size
+            Size = {2 * btn_size[1], btn_size[2]}
+        }
+        layout["PresentationStart"] = {
+            PrettyName = "Activity~Presentation Start",
+            Legend = "Start",
+            Color = {0, 255, 0},
+            OffColor = {0, 100, 0},
+            UnlinkOffColor = true,
+            Position = {3 * btn_size[1], activity_groupbox_position[2] + (1.5 * btn_size[2])},
+            Size = {2 * btn_size[1], btn_size[2]}
         }
         layout["ActiveCall"] = {
             PrettyName = "Activity~Active Call",
             Style = "Indicator",
             Color = {0, 255, 0},
-            Position = {3 * btn_size[1], activity_groupbox_position[2] + (1.5 * btn_size[2])},
-            Size = {btn_size[2], btn_size[2]}
-        }
-        layout["PresentationStart"] = {
-            PrettyName = "Presentation Start",
-            Legend = "Start",
-            Color = {0, 255, 0},
-            OffColor = {0, 100, 0},
-            UnlinkOffColor = true,
             Position = {3 * btn_size[1], activity_groupbox_position[2] + (2.5 * btn_size[2])},
-            Size = {2 * btn_size[1], btn_size[2]}
+            Size = {btn_size[2], btn_size[2]}
         }
         --Audio
         layout["Gain"] = {
@@ -687,9 +689,9 @@ if Controls then
                                 -- Get this Source
                                 s = tonumber(data:sub(-3, -2))
                                 -- Fire Trigger (Doesn't Work...)
-                                -- Controls["SourceSelect"][s]:Trigger()
+                                Controls["SourceSelect"][s]:Trigger()
                                 -- Workaround Trigger
-                                fnTriggerSourceSelect(s)
+                                --fnTriggerSourceSelect(s)
                             end
                         end
                     end
@@ -875,6 +877,12 @@ if Controls then
                         chunk, line = fnGetChunk(line)
                         if chunk == "State:" then
                             Controls.Awake.Boolean = line ~= "Standby"
+                            --Controls.Awake.Legend = line
+                            if line == Standby then
+                                Controls.Awake.Legend = "Wake"
+                            else
+                                Controls.Awake.Legend = "Standby"
+                            end
                         end
                     elseif chunk == "Audio" then
                         chunk, line = fnGetChunk(line)
@@ -958,13 +966,13 @@ if Controls then
             end
         elseif k== "Awake" then
             v.EventHandler = function(changedControl) 
-            if changedControl.Boolean then
-                local cmd = "xCommand Standby Deactivate"
-            else
                 local cmd = "xCommand Standby Activate"
+                if changedControl.Boolean then
+                    cmd = "xCommand Standby Deactivate"
+                end
+                print(cmd)
+                fnSend(cmd)
             end
-            print(cmd)
-            fnSend(cmd)
         else
             for s = 1, MaxSources do
                 if k == "SourceSignal" then
@@ -984,9 +992,9 @@ if Controls then
                 elseif k == "SourceSelect" then
                     -- Setup Event Handler (Source Signal Change)
                     v[s].EventHandler = function(changedControl)
-                        if changedControl.Boolean == true then
+                        --if changedControl.Boolean == true then
                             selectSource(s)
-                        end
+                        --end
                     end
                 end
             end
