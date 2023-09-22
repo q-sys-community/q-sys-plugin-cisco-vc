@@ -755,6 +755,29 @@ if Controls then
         print("Connection::Timeout")
     end
 
+    function syncSourceStates()
+        if ssh.IsConnected then
+            for k, v in pairs(Controls) do
+                if k == "SourceSignal" then
+                    for s = 1, Properties["Source Count"].Value do
+                        if v[s].Boolean == true or Properties["On Signal"].Value == "AlwaysOn" then
+                            setSourceState(s, "Ready")
+                        elseif Properties["On Signal"].Value == "Show" then
+                            setSourceState(s, "Hidden")
+                        elseif Properties["On Signal"].Value == "Enable" then
+                            setSourceState(s, "NotReady")
+                        end
+                    end
+                end
+            end
+        else
+            forceSourceStatesTimer:Stop()
+        end
+    end
+
+    forceSourceStatesTimer = Timer.New()
+    forceSourceStatesTimer.EventHandler = syncSourceStates
+
     function initPanel()
         -- Clean House
         fnSend("xCommand UserInterface Presentation ExternalSource RemoveAll")
@@ -767,22 +790,9 @@ if Controls then
             msg = msg .. " Type: " .. Properties[string.format("Source%02i Icon", s)].Value
             fnSend(msg)
         end
-        -- Sync current signal states
-        for k, v in pairs(Controls) do
-            if k == "SourceSignal" then
-                for s = 1, Properties["Source Count"].Value do
-                    if v[s].Boolean == true or Properties["On Signal"].Value == "AlwaysOn" then
-                        setSourceState(s, "Ready")
-                    elseif Properties["On Signal"].Value == "Show" then
-                        setSourceState(s, "Hidden")
-                    else
-                        setSourceState(s, "NotReady")
-                    end
-                end
-            end
-        end
-        -- Stop the timer
+        syncSourceStates()
         timerInitPanel:Stop()
+        forceSourceStatesTimer:Start(60)
     end
 
     -- Timer for Init (So it can be cancelled if it drops offline)
@@ -955,7 +965,7 @@ if Controls then
                 if changedControl.Boolean then
                     local cmd =
                         "xCommand Presentation Start ConnectorId: " ..
-                        Properties["Content Input"].Value .. " Instance: 1 Layout: Equal SendingMode: LocalRemote" --LocalRemote/LocalOnly]]
+                        Properties["Content Input"].Value .. " Instance: 1 Layout: Equal SendingMode: LocalRemote" --LocalRemote/LocalOnly
                     print(cmd)
                     fnSend(cmd)
                 else
@@ -979,15 +989,18 @@ if Controls then
                     -- Setup Event Handler (Source Signal Change)
                     v[s].EventHandler = function(changedControl)
                         -- print("Signal Change on Source " .. s)
+                        syncSourceStates()
+                        --[[
                         if Properties["On Signal"].Value ~= "AlwaysOn" then
                             if changedControl.Boolean == true then
                                 setSourceState(s, "Ready")
                             elseif Properties["On Signal"].Value == "Show" then
                                 setSourceState(s, "Hidden")
-                            else
+                            elseif Properties["On Signal"].Value == "Enable" then
                                 setSourceState(s, "NotReady")
                             end
                         end
+                        ]]
                     end
                 elseif k == "SourceSelect" then
                     -- Setup Event Handler (Source Signal Change)
@@ -1005,6 +1018,7 @@ if Controls then
     print("Subscribing to " .. Cisco.Host .. "-" .. "Tx")
     Notifications.Subscribe(Cisco.Host .. "-" .. "Tx", subRx)
     Notifications.Subscribe(Cisco.Host .. "-" .. "Rx", subHandlerRx)
+    Notifications.Subscribe(Cisco.Host .. "-" .. "Connection", subHandlerOnline)
 
     fnConnect()
 end
