@@ -782,15 +782,17 @@ if Controls then
         -- Clean House
         fnSend("xCommand UserInterface Presentation ExternalSource RemoveAll")
         -- Add sources as defined
-        for s = 1, Properties["Source Count"].Value do
-            msg = "xCommand UserInterface Presentation ExternalSource Add"
-            msg = msg .. " ConnectorId: " .. Properties["Content Input"].Value
-            msg = msg .. string.format(' SourceIdentifier: "Source%02i"', s)
-            msg = msg .. ' Name: "' .. Properties[string.format("Source%02i Text", s)].Value .. '"'
-            msg = msg .. " Type: " .. Properties[string.format("Source%02i Icon", s)].Value
-            fnSend(msg)
+        if Properties["External Sources"].Value then
+            for s = 1, Properties["Source Count"].Value do
+                msg = "xCommand UserInterface Presentation ExternalSource Add"
+                msg = msg .. " ConnectorId: " .. Properties["Content Input"].Value
+                msg = msg .. string.format(' SourceIdentifier: "Source%02i"', s)
+                msg = msg .. ' Name: "' .. Properties[string.format("Source%02i Text", s)].Value .. '"'
+                msg = msg .. " Type: " .. Properties[string.format("Source%02i Icon", s)].Value
+                fnSend(msg)
+            end
+            syncSourceStates()
         end
-        syncSourceStates()
         timerInitPanel:Stop()
         forceSourceStatesTimer:Start(60)
     end
